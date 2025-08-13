@@ -669,7 +669,7 @@ CREATE TABLE IF NOT EXISTS fisioapp8004.usuarios (
     email VARCHAR(255) NOT NULL UNIQUE,
     telefono VARCHAR(50),
     rol VARCHAR(50) NOT NULL,
-    dni VARCHAR(50),
+    dni VARCHAR(50) UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -680,7 +680,6 @@ CREATE TABLE IF NOT EXISTS fisioapp8004.usuarios (
 -- Crear tabla de servicios/tratamientos
 CREATE TABLE IF NOT EXISTS  fisioapp8004.servicios (
     tenant_id uuid not null references auth.users (id) default auth.uid(),
-    empresa_id UUID REFERENCES fisioapp8004.empresas(id) ON DELETE CASCADE NOT NULL,
     id serial UNIQUE NOT NULL,
     nombre VARCHAR(255) NOT NULL,
     descripcion TEXT,
@@ -694,10 +693,9 @@ CREATE TABLE IF NOT EXISTS  fisioapp8004.servicios (
 -- Crear tabla de citas
 CREATE TABLE IF NOT EXISTS fisioapp8004.citas (
     tenant_id uuid not null references auth.users (id) default auth.uid(),
-    empresa_id UUID REFERENCES fisioapp8004.empresas(id) ON DELETE CASCADE NOT NULL,
-    paciente_id UUID REFERENCES fisioapp8004.pacientes(dni) ON DELETE CASCADE NOT NULL,
-    profesional_id UUID REFERENCES fisioapp8004.profesionales(dni) ON DELETE CASCADE NOT NULL,
-    servicio_id UUID REFERENCES fisioapp8004.servicios(id) ON DELETE CASCADE NOT NULL,
+    paciente_id varchar REFERENCES fisioapp8004.clients(cif) ON DELETE CASCADE NOT NULL,
+    profesional_id varchar REFERENCES fisioapp8004.usuarios(dni) ON DELETE CASCADE NOT NULL,
+    servicio_id int REFERENCES fisioapp8004.servicios(id) ON DELETE CASCADE NOT NULL,
     fecha_hora_inicio TIMESTAMP WITH TIME ZONE NOT NULL,
     fecha_hora_fin TIMESTAMP WITH TIME ZONE NOT NULL,
     estado VARCHAR(50) NOT NULL, 
@@ -706,95 +704,58 @@ CREATE TABLE IF NOT EXISTS fisioapp8004.citas (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Crear políticas de seguridad (RLS) para las tablas
--- Política para empresas
-ALTER TABLE empresas ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Los usuarios pueden ver su propia empresa" ON empresas
-    FOR SELECT USING (auth.uid() IN (SELECT tenant_id FROM usuarios WHERE empresa_id = empresas.id));
-
-CREATE POLICY "Solo los administradores pueden insertar empresas" ON empresas
-    FOR INSERT WITH CHECK (auth.uid() IN (SELECT tenant_id FROM usuarios WHERE rol = "admin"));
-
-CREATE POLICY "Solo los administradores pueden actualizar empresas" ON empresas
-    FOR UPDATE USING (auth.uid() IN (SELECT tenant_id FROM usuarios WHERE rol = "admin"));
 
 -- Política para usuarios
-ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Los usuarios pueden ver usuarios de su empresa" ON usuarios
-    FOR SELECT USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
+ALTER TABLE fisioapp8004.usuarios ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Los usuarios pueden ver usuarios de su empresa" ON fisioapp8004.usuarios
+    FOR SELECT USING (tenant_id IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE tenant_id = auth.uid()));
 
-CREATE POLICY "Solo los administradores pueden insertar usuarios" ON usuarios
+CREATE POLICY "Solo los administradores pueden insertar usuarios" ON fisioapp8004.usuarios
     FOR INSERT WITH CHECK (
-        auth.uid() IN (SELECT tenant_id FROM usuarios WHERE rol = "admin") AND
-        empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid())
+        auth.uid() IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE rol = 'admin') AND
+        tenant_id IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE tenant_id = auth.uid())
     );
 
-CREATE POLICY "Los usuarios pueden actualizar su propio perfil" ON usuarios
+CREATE POLICY "Los usuarios pueden actualizar su propio perfil" ON fisioapp8004.usuarios
     FOR UPDATE USING (tenant_id = auth.uid());
 
 
-CREATE POLICY "Solo los administradores pueden actualizar usuarios de su empresa" ON usuarios
+CREATE POLICY "Solo los administradores pueden actualizar usuarios de su empresa" ON fisioapp8004.usuarios
     FOR UPDATE USING (
-        auth.uid() IN (SELECT tenant_id FROM usuarios WHERE rol = "admin") AND
-        empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid())
+        auth.uid() IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE rol = 'admin') AND
+        tenant_id IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE tenant_id = auth.uid())
     );
 
--- Políticas para pacientes, profesionales, servicios y citas
-ALTER TABLE pacientes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Los usuarios pueden ver pacientes de su empresa" ON pacientes
-    FOR SELECT USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
 
-CREATE POLICY "Los usuarios pueden insertar pacientes de su empresa" ON pacientes
-    FOR INSERT WITH CHECK (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
 
-CREATE POLICY "Los usuarios pueden actualizar pacientes de su empresa" ON pacientes
-    FOR UPDATE USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
+ALTER TABLE fisioapp8004.servicios ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Los usuarios pueden ver servicios de su empresa" ON fisioapp8004.servicios
+    FOR SELECT USING (auth.uid() IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE tenant_id = auth.uid()));
 
-CREATE POLICY "Los usuarios pueden eliminar pacientes de su empresa" ON pacientes
-    FOR DELETE USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
+CREATE POLICY "Los usuarios pueden insertar servicios de su empresa" ON fisioapp8004.servicios
+    FOR INSERT WITH CHECK (auth.uid() IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE tenant_id = auth.uid()));
 
-ALTER TABLE profesionales ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Los usuarios pueden ver profesionales de su empresa" ON profesionales
-    FOR SELECT USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
+CREATE POLICY "Los usuarios pueden actualizar servicios de su empresa" ON fisioapp8004.servicios
+    FOR UPDATE USING (auth.uid() IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE tenant_id = auth.uid()));
 
-CREATE POLICY "Los usuarios pueden insertar profesionales de su empresa" ON profesionales
-    FOR INSERT WITH CHECK (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
+CREATE POLICY "Los usuarios pueden eliminar servicios de su empresa" ON fisioapp8004.servicios
+    FOR DELETE USING (auth.uid() IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE tenant_id = auth.uid()));
 
-CREATE POLICY "Los usuarios pueden actualizar profesionales de su empresa" ON profesionales
-    FOR UPDATE USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
+ALTER TABLE fisioapp8004.citas ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Los usuarios pueden ver citas de su empresa" ON fisioapp8004.citas
+    FOR SELECT USING (auth.uid() IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE tenant_id = auth.uid()));
 
-CREATE POLICY "Los usuarios pueden eliminar profesionales de su empresa" ON profesionales
-    FOR DELETE USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
+CREATE POLICY "Los usuarios pueden insertar citas de su empresa" ON fisioapp8004.citas
+    FOR INSERT WITH CHECK (auth.uid() IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE tenant_id = auth.uid()));
 
-ALTER TABLE servicios ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Los usuarios pueden ver servicios de su empresa" ON servicios
-    FOR SELECT USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
+CREATE POLICY "Los usuarios pueden actualizar citas de su empresa" ON fisioapp8004.citas
+    FOR UPDATE USING (auth.uid() IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE tenant_id = auth.uid()));
 
-CREATE POLICY "Los usuarios pueden insertar servicios de su empresa" ON servicios
-    FOR INSERT WITH CHECK (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
-
-CREATE POLICY "Los usuarios pueden actualizar servicios de su empresa" ON servicios
-    FOR UPDATE USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
-
-CREATE POLICY "Los usuarios pueden eliminar servicios de su empresa" ON servicios
-    FOR DELETE USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
-
-ALTER TABLE citas ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Los usuarios pueden ver citas de su empresa" ON citas
-    FOR SELECT USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
-
-CREATE POLICY "Los usuarios pueden insertar citas de su empresa" ON citas
-    FOR INSERT WITH CHECK (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
-
-CREATE POLICY "Los usuarios pueden actualizar citas de su empresa" ON citas
-    FOR UPDATE USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
-
-CREATE POLICY "Los usuarios pueden eliminar citas de su empresa" ON citas
-    FOR DELETE USING (empresa_id IN (SELECT empresa_id FROM usuarios WHERE tenant_id = auth.uid()));
+CREATE POLICY "Los usuarios pueden eliminar citas de su empresa" ON fisioapp8004.citas
+    FOR DELETE USING (auth.uid() IN (SELECT tenant_id FROM fisioapp8004.usuarios WHERE tenant_id = auth.uid()));
 
 -- Crear triggers para actualizar updated_at
-CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+CREATE OR REPLACE FUNCTION fisioapp8004.trigger_set_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = NOW();
@@ -802,35 +763,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER set_timestamp_empresas
-    BEFORE UPDATE ON empresas
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_set_timestamp();
+
 
 CREATE TRIGGER set_timestamp_usuarios
-    BEFORE UPDATE ON usuarios
+    BEFORE UPDATE ON fisioapp8004.usuarios
     FOR EACH ROW
-    EXECUTE FUNCTION trigger_set_timestamp();
-
-CREATE TRIGGER set_timestamp_pacientes
-    BEFORE UPDATE ON pacientes
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_set_timestamp();
-
-CREATE TRIGGER set_timestamp_profesionales
-    BEFORE UPDATE ON profesionales
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_set_timestamp();
+    EXECUTE FUNCTION fisioapp8004.trigger_set_timestamp();
 
 CREATE TRIGGER set_timestamp_servicios
-    BEFORE UPDATE ON servicios
+    BEFORE UPDATE ON fisioapp8004.servicios
     FOR EACH ROW
-    EXECUTE FUNCTION trigger_set_timestamp();
+    EXECUTE FUNCTION fisioapp8004.trigger_set_timestamp();
 
 CREATE TRIGGER set_timestamp_citas
-    BEFORE UPDATE ON citas
+    BEFORE UPDATE ON fisioapp8004.citas
     FOR EACH ROW
-    EXECUTE FUNCTION trigger_set_timestamp();
+    EXECUTE FUNCTION fisioapp8004.trigger_set_timestamp();
 
 
 
