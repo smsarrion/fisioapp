@@ -8,7 +8,7 @@ import 'package:fisioapp/services/profesional_service.dart';
 import 'package:fisioapp/models/profesional.dart';
 import 'package:fisioapp/services/servicio_service.dart';
 import 'package:fisioapp/models/servicio.dart';
-import 'package:fisioapp/services/auth_service.dart';
+import 'package:fisioapp/services/auth_services.dart';
 import 'package:fisioapp/models/usuario.dart';
 import 'package:fisioapp/services/empresa_service.dart';
 

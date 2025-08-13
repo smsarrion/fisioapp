@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fisioapp/models/cita.dart';
 import 'package:fisioapp/services/cita_service.dart';
-import 'package:fisioapp/services/auth_service.dart';
+import 'package:fisioapp/services/auth_services.dart';
 import 'package:fisioapp/models/usuario.dart';
 import 'package:fisioapp/models/empresa.dart';
 import 'package:fisioapp/services/empresa_service.dart';
+import 'package:intl/intl.dart';
 
 class CitasScreen extends StatefulWidget {
   const CitasScreen({Key? key}) : super(key: key);
@@ -159,7 +160,7 @@ class _CitasScreenState extends State<CitasScreen> {
                 );
               }
             },
-            style: TextButton.styleFrom(primary: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Eliminar'),
           ),
         ],

@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:fisioapp/models/cita.dart';
 import 'package:fisioapp/services/cita_service.dart';
-import 'package:fisioapp/services/auth_service.dart';
+import 'package:fisioapp/services/auth_services.dart';
 import 'package:fisioapp/models/usuario.dart';
 import 'package:fisioapp/models/empresa.dart';
 import 'package:fisioapp/services/empresa_service.dart';

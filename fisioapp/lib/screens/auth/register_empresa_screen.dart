@@ -91,7 +91,7 @@ class _RegisterEmpresaScreenState extends State<RegisterEmpresaScreen> {
             'id': response.user!.id,
             'empresa_id': empresaResponse['id'],
             'nombre': _nombreAdminController.text.trim(),
-            'apellido': _apellidoAdminControllerController.text.trim(),
+            'apellido': _apellidoAdminController.text.trim(),
             'email': _emailAdminController.text.trim(),
             'rol': 'admin',
           });
